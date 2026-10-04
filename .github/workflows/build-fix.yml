@@ -1,4 +1,4 @@
-name: Build fix-gdrive image
+name: Build My Docker image
 
 on:
   workflow_dispatch:
