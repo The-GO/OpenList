@@ -10,7 +10,7 @@ on:
       - 'pkg/**'
       - 'cmd/**'
       - 'Dockerfile'
-      - '.github/workflows/build-fix.yml'
+      - '.github/workflows/Build My Docker image.yml'
 
 env:
   REGISTRY: ghcr.io
