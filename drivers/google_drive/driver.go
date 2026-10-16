@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/OpenListTeam/OpenList/v4/drivers/base"
 	"github.com/OpenListTeam/OpenList/v4/internal/driver"
@@ -79,12 +80,24 @@ func (d *GoogleDrive) MakeDir(ctx context.Context, parentDir model.Obj, dirName 
 }
 
 func (d *GoogleDrive) Move(ctx context.Context, srcObj, dstDir model.Obj) error {
-	query := map[string]string{
-		"addParents":    dstDir.GetID(),
-		"removeParents": "root",
+	// 共享云端硬盘要求文件始终有且仅有一个父文件夹，
+	// 必须先查出文件当前的真实父级，不能写死 removeParents=root，
+	// 否则文件会瞬间拥有两个父级，触发 teamDrivesParentLimit 错误。
+	var fileInfo struct {
+		Parents []string `json:"parents"`
 	}
 	url := "https://www.googleapis.com/drive/v3/files/" + srcObj.GetID()
-	_, err := d.request(url, http.MethodPatch, func(req *resty.Request) {
+	_, err := d.request(url+"?fields=parents", http.MethodGet, nil, &fileInfo)
+	if err != nil {
+		return err
+	}
+	query := map[string]string{
+		"addParents": dstDir.GetID(),
+	}
+	if parents := strings.Join(fileInfo.Parents, ","); parents != "" {
+		query["removeParents"] = parents
+	}
+	_, err = d.request(url, http.MethodPatch, func(req *resty.Request) {
 		req.SetQueryParams(query)
 	}, nil)
 	return err
