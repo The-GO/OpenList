@@ -15,7 +15,28 @@ permissions:
 
 jobs:
   build:
+    name: Build latest${{ matrix.tag_suffix }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag_suffix: ""
+            base_image_tag: "base"
+            install_ffmpeg: "false"
+            install_aria2: "false"
+          - tag_suffix: "-ffmpeg"
+            base_image_tag: "ffmpeg"
+            install_ffmpeg: "true"
+            install_aria2: "false"
+          - tag_suffix: "-aria2"
+            base_image_tag: "aria2"
+            install_ffmpeg: "false"
+            install_aria2: "true"
+          - tag_suffix: "-aio"
+            base_image_tag: "aio"
+            install_ffmpeg: "true"
+            install_aria2: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -37,4 +58,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.IMAGE }}:latest
+          tags: ${{ env.IMAGE }}:latest${{ matrix.tag_suffix }}
+          build-args: |
+            BASE_IMAGE_TAG=${{ matrix.base_image_tag }}
+            INSTALL_FFMPEG=${{ matrix.install_ffmpeg }}
+            INSTALL_ARIA2=${{ matrix.install_aria2 }}
